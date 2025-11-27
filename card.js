@@ -68,50 +68,54 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // ===== Добавление объявления =====
   createAdBtn.addEventListener("click", async (e) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    const phoneInput = document.getElementById("phone").value.trim();
-    const phone = phoneInput.startsWith("0") ? "996" + phoneInput.slice(1) : phoneInput;
-    const category = categorySelect.value;
-    const descText = desc.value.trim();
-    const price = document.getElementById("price").value.trim();
-    const allImgs = Array.from(document.querySelectorAll("#selectedGrid .slot img.gal"))
-      .map(img => img.src)
-      .filter(src => src && !src.includes("Canvas.svg"));
+  const phoneInput = document.getElementById("phone").value.trim();
+  const phone = phoneInput.startsWith("0") ? "996" + phoneInput.slice(1) : phoneInput;
+  const category = categorySelect.value;
+  const descText = desc.value.trim();
+  const price = document.getElementById("price").value.trim();
+  const allImgs = Array.from(document.querySelectorAll("#selectedGrid .slot img.gal"))
+    .map(img => img.src)
+    .filter(src => src && !src.includes("Canvas.svg"));
 
-    if (!phone || !category || !descText || allImgs.length === 0) {
-      alert("Заполните все поля и добавьте хотя бы одно фото.");
-      return;
-    }
+  if (!phone || !category || !descText || allImgs.length === 0) {
+    alert("Заполните все поля и добавьте хотя бы одно фото.");
+    return;
+  }
 
-    const newAdData = {
-      images: allImgs,
-      firstImg: allImgs[0],
-      categoryName: categoryLabels[category] || "Категория",
-      descText,
-      price,
-      phone,
-      views: 0,
-      likes: 0,
-      timestamp: Date.now()
-    };
+  const newAdData = {
+    images: allImgs,
+    firstImg: allImgs[0],
+    categoryName: categoryLabels[category] || "Категория",
+    descText,
+    price,
+    phone,
+    views: 0,
+    likes: 0,
+    timestamp: Date.now()
+  };
 
-    try {
-      await db.collection("ads").add(newAdData);
+  try {
+    const docRef = await db.collection("ads").add(newAdData);
 
-      // Очистка формы сразу после отправки
-      document.getElementById("phone").value = "";
-      categorySelect.value = "";
-      document.getElementById("price").value = "";
-      desc.value = "";
-      counter.textContent = "0/6000";
-      document.querySelectorAll("#selectedGrid img.gal").forEach(img => img.src = "./img/Canvas.svg");
+    // После успешного добавления рендерим на экран
+    allAds.unshift({ id: docRef.id, ...newAdData });
+    renderMasonry(allAds, 2);
 
-    } catch (error) {
-      console.error("Ошибка при добавлении объявления:", error);
-      alert("Ошибка при сохранении объявления. Попробуйте снова.");
-    }
-  });
+    // Очистка формы
+    document.getElementById("phone").value = "";
+    categorySelect.value = "";
+    document.getElementById("price").value = "";
+    desc.value = "";
+    counter.textContent = "0/6000";
+    document.querySelectorAll("#selectedGrid img.gal").forEach(img => img.src = "./img/Canvas.svg");
+
+  } catch (error) {
+    console.error("Ошибка при добавлении объявления:", error);
+    alert("Ошибка при сохранении объявления. Попробуйте снова.");
+  }
+});
 
   // ===== Masonry layout =====
   function renderMasonry(cardsData, columnsCount = 2) {
