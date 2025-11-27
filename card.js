@@ -59,22 +59,28 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // ===== Загрузка объявлений из Firebase =====
-  async function loadAllAds() {
-    try {
-      if (loadingEl) loadingEl.style.display = "block";
-      const snapshot = await db.collection("ads").orderBy("timestamp", "desc").get();
-      allAds = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      saveAllAds();
-      renderMasonry(allAds, 2);
-    } catch (error) {
-      console.error("Ошибка при загрузке объявлений:", error);
-    } finally {
-      if (loadingEl) loadingEl.style.display = "none";
-    }
-  }
+// сразу рендерим локальные данные
+if (allAds.length) {
+  renderMasonry(allAds, 2);
+  if (loadingEl) loadingEl.style.display = "none"; // скрываем "Загрузка"
+}
 
-  loadAllAds();
+// затем асинхронно подгружаем с Firebase
+async function loadAllAds() {
+  if (loadingEl) loadingEl.style.display = "block";
+  try {
+    const snapshot = await db.collection("ads").orderBy("timestamp", "desc").get();
+    allAds = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    saveAllAds();
+    renderMasonry(allAds, 2); // обновляем рендер свежими данными
+  } catch (err) {
+    console.error("Ошибка при загрузке объявлений:", err);
+  } finally {
+    if (loadingEl) loadingEl.style.display = "none";
+  }
+}
+
+loadAllAds();
   // ===== Добавление объявления =====
   createAdBtn.addEventListener("click", async (e) => {
     e.preventDefault();
