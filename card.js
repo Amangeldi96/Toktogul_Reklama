@@ -57,18 +57,25 @@ document.addEventListener("DOMContentLoaded", () => {
   if (allAds.length) renderMasonry(allAds, 2);
 
   // ===== Загрузка свежих объявлений из Firebase =====
-  async function loadAllAds() {
-    try {
-      const snapshot = await db.collection("ads").orderBy("timestamp", "desc").get();
-      allAds = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      saveAllAds();
-      renderMasonry(allAds, 2);
-    } catch (error) {
-      console.error("Ошибка при загрузке объявлений:", error);
-    }
-  }
+const loadingEl = document.getElementById("loading"); // убедись, что такой элемент есть в HTML
 
-  loadAllAds();
+async function loadAllAds() {
+  try {
+    if (loadingEl) loadingEl.style.display = "block"; // показать индикатор
+    const snapshot = await db.collection("ads").orderBy("timestamp", "desc").get();
+    allAds = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    saveAllAds();
+    renderMasonry(allAds, 2);
+  } catch (error) {
+    console.error("Ошибка при загрузке объявлений:", error);
+  } finally {
+    if (loadingEl) loadingEl.style.display = "none"; // скрыть индикатор
+  }
+}
+
+// запуск загрузки
+loadAllAds();
+
 
   // ===== Добавление объявления =====
   createAdBtn.addEventListener("click", async (e) => {
