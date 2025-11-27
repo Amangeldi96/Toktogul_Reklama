@@ -163,11 +163,21 @@
     text-align:right;color:#9aa4b3;font-size:12px;margin-top:6px;
   }
 
-  .actions{margin-top:18px;display:flex;flex-direction:column;gap:12px}
+  .actions{
+		margin-top:18px;
+		display:flex;
+		flex-direction:column;
+		gap:12px
+	}
   .btn-green{
-    width:100%;background:linear-gradient(90deg,var(--green),var(--soft-green));
-    color:#fff;padding:14px;border-radius:999px;border:none;
-    font-weight:700;font-size:16px;cursor:pointer;
+    width:100%;
+		background:linear-gradient(90deg,var(--green),var(--soft-green));
+    color:#fff;
+		padding:14px;
+		border-radius:999px;
+		border:none;
+    font-weight:700;
+		font-size:16px;cursor:pointer;
     box-shadow:0 8px 20px rgba(34,37,47,0.12);
   }
   .link-manual{color:var(--soft-green);font-weight:700;cursor:pointer;text-align:center

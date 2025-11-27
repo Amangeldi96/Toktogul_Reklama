@@ -72,8 +72,6 @@ listenAds();
 
 createAdBtn.addEventListener("click", async (e) => {
   e.preventDefault();
-
-  // Блокируем кнопку сразу
   createAdBtn.disabled = true;
 
   const phoneInput = document.getElementById("phone").value.trim();
@@ -106,7 +104,6 @@ createAdBtn.addEventListener("click", async (e) => {
   try {
     const docRef = await db.collection("ads").add(newAdData);
 
-    // Добавляем на страницу
     allAds.unshift({ id: docRef.id, ...newAdData });
     renderMasonry(allAds, 2);
 
@@ -118,18 +115,21 @@ createAdBtn.addEventListener("click", async (e) => {
     counter.textContent = "0/6000";
     document.querySelectorAll("#selectedGrid img.gal").forEach(img => img.src = "./img/Canvas.svg");
 
-    // Закрываем popup
+    // Закрытие popup
     const popup = document.getElementById("addPopup");
     if (popup) {
+      // Если popup открывается через класс 'open'
       popup.classList.remove("open");
       document.body.style.overflow = "";
+      // Если popup открывается через display
+      // popup.style.display = "none";
     }
 
   } catch (error) {
     console.error("Ошибка при добавлении объявления:", error);
     alert("Ошибка при сохранении объявления. Попробуйте снова.");
   } finally {
-    createAdBtn.disabled = false; // разблокируем кнопку
+    createAdBtn.disabled = false;
   }
 });
 
