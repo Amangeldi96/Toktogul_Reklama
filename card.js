@@ -23,6 +23,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const homeMenu = document.querySelector('[data-type="home"]');
   const searchInput = document.getElementById("searchInput");
   const chatMenu = document.querySelector('[data-type="chat"]');
+  const loadingEl = document.getElementById("loading"); // спиннер
 
   const categoryLabels = {
     electronics: "Электроника",
@@ -57,25 +58,21 @@ document.addEventListener("DOMContentLoaded", () => {
   if (allAds.length) renderMasonry(allAds, 2);
 
   // ===== Загрузка свежих объявлений из Firebase =====
-const loadingEl = document.getElementById("loading"); // убедись, что такой элемент есть в HTML
-
-async function loadAllAds() {
-  try {
-    if (loadingEl) loadingEl.style.display = "block"; // показать индикатор
-    const snapshot = await db.collection("ads").orderBy("timestamp", "desc").get();
-    allAds = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    saveAllAds();
-    renderMasonry(allAds, 2);
-  } catch (error) {
-    console.error("Ошибка при загрузке объявлений:", error);
-  } finally {
-    if (loadingEl) loadingEl.style.display = "none"; // скрыть индикатор
+  async function loadAllAds() {
+    try {
+      if (loadingEl) loadingEl.style.display = "block";
+      const snapshot = await db.collection("ads").orderBy("timestamp", "desc").get();
+      allAds = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      saveAllAds();
+      renderMasonry(allAds, 2);
+    } catch (error) {
+      console.error("Ошибка при загрузке объявлений:", error);
+    } finally {
+      if (loadingEl) loadingEl.style.display = "none";
+    }
   }
-}
 
-// запуск загрузки
-loadAllAds();
-
+  loadAllAds();
 
   // ===== Добавление объявления =====
   createAdBtn.addEventListener("click", async (e) => {
@@ -107,9 +104,17 @@ loadAllAds();
       timestamp: Date.now()
     };
 
+    // --- Показ локально сразу ---
+    const tempId = "temp-" + Date.now();
+    allAds.unshift({ id: tempId, ...newAdData });
+    renderMasonry(allAds, 2);
+    saveAllAds();
+
     try {
       const docRef = await db.collection("ads").add(newAdData);
-      allAds.unshift({ id: docRef.id, ...newAdData });
+      // заменяем tempId на реальный id
+      const index = allAds.findIndex(ad => ad.id === tempId);
+      if (index !== -1) allAds[index].id = docRef.id;
       saveAllAds();
       renderMasonry(allAds, 2);
 
@@ -120,7 +125,6 @@ loadAllAds();
       desc.value = "";
       counter.textContent = "0/6000";
       document.querySelectorAll("#selectedGrid img.gal").forEach(img => img.src = "./img/Canvas.svg");
-
     } catch (error) {
       console.error("Ошибка при добавлении объявления:", error);
       alert("Ошибка при сохранении объявления. Попробуйте снова.");
@@ -240,7 +244,7 @@ loadAllAds();
     </div>
     `;
 
-    // Галерея
+     // Галерея
     card.querySelector(".card-img").addEventListener("click", () => openGallery(data.images, card, data.id));
 
     // Лайки
@@ -299,7 +303,7 @@ loadAllAds();
     });
   }
 
-  // ===== Экспорт для других скриптов =====
+  // ===== Экспорт =====
   window.renderAds = renderMasonry;
   window.allAds = allAds;
   window.favorites = favorites;
