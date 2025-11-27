@@ -59,22 +59,28 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // ===== Загрузка объявлений из Firebase =====
-  async function loadAllAds() {
-    try {
-      if (loadingEl) loadingEl.style.display = "block";
-      const snapshot = await db.collection("ads").orderBy("timestamp", "desc").get();
-      allAds = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      saveAllAds();
-      renderMasonry(allAds, 2);
-    } catch (error) {
-      console.error("Ошибка при загрузке объявлений:", error);
-    } finally {
-      if (loadingEl) loadingEl.style.display = "none";
-    }
-  }
+async function loadAllAds() {
+  if (loadingEl) loadingEl.style.display = "block"; // показываем индикатор загрузки
+  try {
+    const snapshot = await db.collection("ads").orderBy("timestamp", "desc").get();
+    allAds = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    saveAllAds(); // сохраняем в localStorage
 
-  loadAllAds();
+    if (allAds.length) {
+      renderMasonry(allAds, 2); // рендерим карточки
+    } else {
+      cardsContainer.innerHTML = "<p style='text-align:center;'>Нет объявлений</p>";
+    }
+  } catch (error) {
+    console.error("Ошибка при загрузке объявлений:", error);
+    cardsContainer.innerHTML = "<p style='text-align:center; color:red;'>Ошибка загрузки объявлений</p>";
+  } finally {
+    if (loadingEl) loadingEl.style.display = "none"; // скрываем индикатор
+  }
+}
+
+// стартовая загрузка
+loadAllAds();
   // ===== Добавление объявления =====
   createAdBtn.addEventListener("click", async (e) => {
     e.preventDefault();
