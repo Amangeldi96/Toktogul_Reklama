@@ -70,9 +70,6 @@ function listenAds() {
 // запускаем сразу
 listenAds();
 
-  // ===== Добавление объявления =====
-const createAdBtn = document.getElementById("createAd");
-
 createAdBtn.addEventListener("click", async (e) => {
   e.preventDefault();
 
