@@ -59,24 +59,26 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-// Функция загрузки объявлений
-function loadAllAds() {
+// ===== Загрузка объявлений через onSnapshot =====
+function loadAllAdsRealtime() {
   if (loadingEl) loadingEl.style.display = "block";
 
   db.collection("ads").orderBy("timestamp", "desc")
     .onSnapshot(snapshot => {
       allAds = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      renderMasonry(allAds, 2);  // рендерим сразу
+      renderMasonry(allAds, 2);
       if (loadingEl) loadingEl.style.display = "none";
     }, error => {
       console.error("Ошибка при загрузке объявлений:", error);
+      alert("Ошибка при загрузке объявлений. Попробуйте обновить страницу.\n" + error.message);
+      if (cardsContainer) cardsContainer.innerHTML = "<p style='text-align:center; color:red;'>Ошибка загрузки объявлений</p>";
       if (loadingEl) loadingEl.style.display = "none";
-      cardsContainer.innerHTML = "<p style='text-align:center; color:red;'>Ошибка загрузки объявлений</p>";
     });
 }
 
-// стартовая загрузка
-loadAllAds();
+// ===== Вызываем realtime загрузку =====
+loadAllAdsRealtime();
+
   // ===== Добавление объявления =====
   createAdBtn.addEventListener("click", async (e) => {
     e.preventDefault();
