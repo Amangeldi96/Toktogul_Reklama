@@ -11,14 +11,8 @@ document.addEventListener("DOMContentLoaded", () => {
     measurementId: "G-EGSEE12JPM"
   };
   firebase.initializeApp(firebaseConfig);
-
   const db = firebase.firestore();
 
-  // ===== Включаем offline persistence =====
-  firebase.firestore().enablePersistence()
-    .catch(err => console.log("Ошибка offline persistence:", err));
-
-  // ===== Элементы =====
   const cardsContainer = document.getElementById("cards");
   const createAdBtn = document.getElementById("createAd");
   const categorySelect = document.getElementById("category");
@@ -28,7 +22,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const homeMenu = document.querySelector('[data-type="home"]');
   const searchInput = document.getElementById("searchInput");
   const chatMenu = document.querySelector('[data-type="chat"]');
-  const loadingEl = document.getElementById("loading"); // спиннер
+  const loadingEl = document.getElementById("loading");
 
   const categoryLabels = {
     electronics: "Электроника",
@@ -44,13 +38,9 @@ document.addEventListener("DOMContentLoaded", () => {
     other: "Другое"
   };
 
-  let allAds = JSON.parse(localStorage.getItem("allAds") || "[]");
-  let favorites = JSON.parse(localStorage.getItem("favorites") || "[]");
-  let uniqueViews = JSON.parse(localStorage.getItem("uniqueViews") || "{}");
-
-  function saveAllAds() { localStorage.setItem("allAds", JSON.stringify(allAds)); }
-  function saveFavorites() { localStorage.setItem("favorites", JSON.stringify(favorites)); }
-  function saveUniqueViews() { localStorage.setItem("uniqueViews", JSON.stringify(uniqueViews)); }
+  let allAds = [];
+  let favorites = [];
+  let uniqueViews = {};
 
   // ===== Счётчик описания =====
   if (desc && counter) {
@@ -59,25 +49,22 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-// ===== Загрузка объявлений через onSnapshot =====
-function loadAllAdsRealtime() {
-  if (loadingEl) loadingEl.style.display = "block";
+  // ===== Загрузка объявлений через onSnapshot =====
+  function listenAds() {
+    if (loadingEl) loadingEl.style.display = "block";
+    db.collection("ads").orderBy("timestamp", "desc")
+      .onSnapshot(snapshot => {
+        allAds = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        renderMasonry(allAds, 2);
+        if (loadingEl) loadingEl.style.display = "none";
+      }, error => {
+        console.error("Ошибка при загрузке объявлений:", error);
+        if (loadingEl) loadingEl.style.display = "none";
+        cardsContainer.innerHTML = "<p style='text-align:center; color:red;'>Ошибка загрузки объявлений. Попробуйте обновить страницу.</p>";
+      });
+  }
 
-  db.collection("ads").orderBy("timestamp", "desc")
-    .onSnapshot(snapshot => {
-      allAds = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      renderMasonry(allAds, 2);
-      if (loadingEl) loadingEl.style.display = "none";
-    }, error => {
-      console.error("Ошибка при загрузке объявлений:", error);
-      alert("Ошибка при загрузке объявлений. Попробуйте обновить страницу.\n" + error.message);
-      if (cardsContainer) cardsContainer.innerHTML = "<p style='text-align:center; color:red;'>Ошибка загрузки объявлений</p>";
-      if (loadingEl) loadingEl.style.display = "none";
-    });
-}
-
-// ===== Вызываем realtime загрузку =====
-loadAllAdsRealtime();
+  listenAds(); // сразу начинаем слушать обновления
 
   // ===== Добавление объявления =====
   createAdBtn.addEventListener("click", async (e) => {
@@ -109,27 +96,17 @@ loadAllAdsRealtime();
       timestamp: Date.now()
     };
 
-    // --- Показ локально сразу ---
-    const tempId = "temp-" + Date.now();
-    allAds.unshift({ id: tempId, ...newAdData });
-    renderMasonry(allAds, 2);
-    saveAllAds();
-
     try {
-      const docRef = await db.collection("ads").add(newAdData);
-      // заменяем tempId на реальный id
-      const index = allAds.findIndex(ad => ad.id === tempId);
-      if (index !== -1) allAds[index].id = docRef.id;
-      saveAllAds();
-      renderMasonry(allAds, 2);
+      await db.collection("ads").add(newAdData);
 
-      // Очистка формы
+      // Очистка формы сразу после отправки
       document.getElementById("phone").value = "";
       categorySelect.value = "";
       document.getElementById("price").value = "";
       desc.value = "";
       counter.textContent = "0/6000";
       document.querySelectorAll("#selectedGrid img.gal").forEach(img => img.src = "./img/Canvas.svg");
+
     } catch (error) {
       console.error("Ошибка при добавлении объявления:", error);
       alert("Ошибка при сохранении объявления. Попробуйте снова.");
