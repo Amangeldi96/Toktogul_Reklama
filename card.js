@@ -14,9 +14,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const db = firebase.firestore();
 
-  // ===== Включаем offline persistence =====
-  firebase.firestore().enablePersistence()
-    .catch(err => console.log("Ошибка offline persistence:", err));
+
 
   // ===== Элементы =====
   const cardsContainer = document.getElementById("cards");
@@ -73,6 +71,7 @@ async function loadAllAds() {
     }
   } catch (error) {
     console.error("Ошибка при загрузке объявлений:", error);
+		alert("Ошибка при загрузке объявлений. Попробуйте обновить страницу." + error.message);
     cardsContainer.innerHTML = "<p style='text-align:center; color:red;'>Ошибка загрузки объявлений</p>";
   } finally {
     if (loadingEl) loadingEl.style.display = "none"; // скрываем индикатор
