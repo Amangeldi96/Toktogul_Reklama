@@ -71,10 +71,12 @@ function listenAds() {
 listenAds();
 
   // ===== Добавление объявления =====
+const createAdBtn = document.getElementById("createAd");
+
 createAdBtn.addEventListener("click", async (e) => {
   e.preventDefault();
 
-  // Блокируем кнопку, чтобы не было многократных нажатий
+  // Блокируем кнопку сразу
   createAdBtn.disabled = true;
 
   const phoneInput = document.getElementById("phone").value.trim();
@@ -107,7 +109,7 @@ createAdBtn.addEventListener("click", async (e) => {
   try {
     const docRef = await db.collection("ads").add(newAdData);
 
-    // Показ локально
+    // Добавляем на страницу
     allAds.unshift({ id: docRef.id, ...newAdData });
     renderMasonry(allAds, 2);
 
@@ -119,11 +121,11 @@ createAdBtn.addEventListener("click", async (e) => {
     counter.textContent = "0/6000";
     document.querySelectorAll("#selectedGrid img.gal").forEach(img => img.src = "./img/Canvas.svg");
 
-    // **Закрываем popup после успешного добавления**
+    // Закрываем popup
     const popup = document.getElementById("addPopup");
     if (popup) {
-      popup.classList.remove("open"); // закрываем popup
-      document.body.style.overflow = ""; // восстанавливаем прокрутку
+      popup.classList.remove("open");
+      document.body.style.overflow = "";
     }
 
   } catch (error) {
