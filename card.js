@@ -84,10 +84,6 @@ document.addEventListener("DOMContentLoaded", () => {
     return;
   }
 
-      phone = phone.replace(/\D/g, "");
-      if (phone.startsWith("996")) {
-        phone = "0" + phone.slice(3);
-      }
 
   const newAdData = {
     images: allImgs,
