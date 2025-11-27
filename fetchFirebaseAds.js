@@ -16,4 +16,8 @@ async function fetchAds() {
   console.log('ads.json обновлён!');
 }
 
+<<<<<<< HEAD
 fetchAds().catch(console.error);
+=======
+fetchAds().catch(console.error);
+>>>>>>> dd50505 (Обновил файл после редактирования)
