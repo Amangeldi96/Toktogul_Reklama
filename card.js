@@ -25,6 +25,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const chatMenu = document.querySelector('[data-type="chat"]');
   const loadingEl = document.getElementById("loading");
 
+  const modal = document.getElementById("modal");
+  const openModalBtn = document.getElementById("openModal");
+  const closeModalBtn = document.getElementById("closeModal");
+
   const categoryLabels = {
     electronics: "Электроника",
     cars: "Авто",
@@ -50,91 +54,95 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
- // ===== Слушаем обновления объявлений =====
-function listenAds() {
-  if (loadingEl) loadingEl.style.display = "block";
-
-  db.collection("ads")
-    .orderBy("timestamp", "desc")
-    .onSnapshot(snapshot => {
-      allAds = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      renderMasonry(allAds, 2);
-      if (loadingEl) loadingEl.style.display = "none";
-    }, error => {
-      console.error("Ошибка при загрузке объявлений:", error);
-      if (loadingEl) loadingEl.style.display = "none";
-      cardsContainer.innerHTML = "<p style='text-align:center; color:red;'>Ошибка загрузки объявлений. Попробуйте обновить страницу.</p>";
+  // ===== Открытие / закрытие модалки =====
+  if (openModalBtn) {
+    openModalBtn.addEventListener("click", () => {
+      modal.classList.add("open");
+      document.body.style.overflow = "hidden";
     });
-}
-
-// запускаем сразу
-listenAds();
-
-createAdBtn.addEventListener("click", async (e) => {
-  e.preventDefault();
-  createAdBtn.disabled = true;
-
-  const phoneInput = document.getElementById("phone").value.trim();
-  const phone = phoneInput.startsWith("0") ? "996" + phoneInput.slice(1) : phoneInput;
-  const category = categorySelect.value;
-  const descText = desc.value.trim();
-  const price = document.getElementById("price").value.trim();
-  const allImgs = Array.from(document.querySelectorAll("#selectedGrid .slot img.gal"))
-    .map(img => img.src)
-    .filter(src => src && !src.includes("Canvas.svg"));
-
-  if (!phone || !category || !descText || allImgs.length === 0) {
-    alert("Заполните все поля и добавьте хотя бы одно фото.");
-    createAdBtn.disabled = false;
-    return;
+  }
+  if (closeModalBtn) {
+    closeModalBtn.addEventListener("click", () => {
+      modal.classList.remove("open");
+      document.body.style.overflow = "";
+    });
   }
 
-  const newAdData = {
-    images: allImgs,
-    firstImg: allImgs[0],
-    categoryName: categoryLabels[category] || "Категория",
-    descText,
-    price,
-    phone,
-    views: 0,
-    likes: 0,
-    timestamp: Date.now()
-  };
+  // ===== Слушаем обновления объявлений =====
+  function listenAds() {
+    if (loadingEl) loadingEl.style.display = "block";
 
-  try {
-    const docRef = await db.collection("ads").add(newAdData);
+    db.collection("ads")
+      .orderBy("timestamp", "desc")
+      .onSnapshot(snapshot => {
+        allAds = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        renderMasonry(allAds, 2);
+        if (loadingEl) loadingEl.style.display = "none";
+      }, error => {
+        console.error("Ошибка при загрузке объявлений:", error);
+        if (loadingEl) loadingEl.style.display = "none";
+        cardsContainer.innerHTML = "<p style='text-align:center; color:red;'>Ошибка загрузки объявлений. Попробуйте обновить страницу.</p>";
+      });
+  }
+  listenAds();
 
-    allAds.unshift({ id: docRef.id, ...newAdData });
-    renderMasonry(allAds, 2);
+  // ===== Создание объявления =====
+  createAdBtn.addEventListener("click", async (e) => {
+    e.preventDefault();
+    createAdBtn.disabled = true;
 
-    // Очистка формы
-    document.getElementById("phone").value = "";
-    categorySelect.value = "";
-    document.getElementById("price").value = "";
-    desc.value = "";
-    counter.textContent = "0/6000";
-    document.querySelectorAll("#selectedGrid img.gal").forEach(img => img.src = "./img/Canvas.svg");
+    const phoneInput = document.getElementById("phone").value.trim();
+    const phone = phoneInput.startsWith("0") ? "996" + phoneInput.slice(1) : phoneInput; // для Firebase / WhatsApp
+    const displayPhone = phone.startsWith("996") ? "0" + phone.slice(3) : phone; // для отображения на сайте
+    const category = categorySelect.value;
+    const descText = desc.value.trim();
+    const price = document.getElementById("price").value.trim();
+    const allImgs = Array.from(document.querySelectorAll("#selectedGrid .slot img.gal"))
+      .map(img => img.src)
+      .filter(src => src && !src.includes("Canvas.svg"));
 
-    // Закрытие popup
-    const popup = document.getElementById("addPopup");
-    if (popup) {
-      // Если popup открывается через класс 'open'
-      popup.classList.remove("open");
-      document.body.style.overflow = "";
-      // Если popup открывается через display
-      // popup.style.display = "none";
+    if (!phone || !category || !descText || allImgs.length === 0) {
+      alert("Заполните все поля и добавьте хотя бы одно фото.");
+      createAdBtn.disabled = false;
+      return;
     }
 
-  } catch (error) {
-    console.error("Ошибка при добавлении объявления:", error);
-    alert("Ошибка при сохранении объявления. Попробуйте снова.");
-  } finally {
-    createAdBtn.disabled = false;
-  }
-});
+    const newAdData = {
+      images: allImgs,
+      firstImg: allImgs[0],
+      categoryName: categoryLabels[category] || "Категория",
+      descText,
+      price,
+      phone,
+      views: 0,
+      likes: 0,
+      timestamp: Date.now()
+    };
 
+    try {
+      const docRef = await db.collection("ads").add(newAdData);
+      allAds.unshift({ id: docRef.id, ...newAdData });
+      renderMasonry(allAds, 2);
 
+      // Очистка формы
+      document.getElementById("phone").value = "";
+      categorySelect.value = "";
+      document.getElementById("price").value = "";
+      desc.value = "";
+      counter.textContent = "0/6000";
+      document.querySelectorAll("#selectedGrid img.gal").forEach(img => img.src = "./img/Canvas.svg");
 
+      // Закрытие popup
+      modal.classList.remove("open");
+      document.body.style.overflow = "";
+
+    } catch (error) {
+      console.error("Ошибка при добавлении объявления:", error);
+      alert("Ошибка при сохранении объявления. Попробуйте снова.");
+    } finally {
+      createAdBtn.disabled = false;
+    }
+  });
 
   // ===== Masonry layout =====
   function renderMasonry(cardsData, columnsCount = 2) {
@@ -163,53 +171,18 @@ createAdBtn.addEventListener("click", async (e) => {
     });
   }
 
-  // ===== Уникальные просмотры =====
-  function incrementViewCount(cardId, viewCountElement) {
-    if (!uniqueViews[cardId]) {
-      const adIndex = allAds.findIndex(ad => ad.id === cardId);
-      if (adIndex !== -1) {
-        allAds[adIndex].views++;
-        viewCountElement.textContent = allAds[adIndex].views;
-        uniqueViews[cardId] = true;
-        saveUniqueViews();
-        saveAllAds();
-      }
-    }
-  }
-
-  // ===== Галерея =====
-  function openGallery(images, card, cardId) {
-    const galleryModal = document.getElementById("galleryModal");
-    const galleryTrack = document.getElementById("galleryTrack");
-    const viewCountElement = card.querySelector(".view-count");
-
-    incrementViewCount(cardId, viewCountElement);
-
-    galleryTrack.innerHTML = images.map(src => `<div class="gallery-slide"><img src="${src}" /></div>`).join("");
-    galleryModal.classList.add("open");
-    document.body.style.overflow = "hidden";
-  }
-
-  document.getElementById("closeGallery").addEventListener("click", () => {
-    document.getElementById("galleryModal").classList.remove("open");
-    document.body.style.overflow = "";
-  });
-
   // ===== Создание карточки =====
   function createCard(data) {
-  data.views = data.views || 0;
-  data.likes = data.likes || 0;
+    data.views = data.views || 0;
+    data.likes = data.likes || 0;
 
-  // Для отображения на сайте: начинаем с 0
-  const displayPhone = data.phone.startsWith("996") ? "0" + data.phone.slice(3) : data.phone;
+    const displayPhone = data.phone.startsWith("996") ? "0" + data.phone.slice(3) : data.phone;
+    const waNumber = data.phone;
 
-  // Для WhatsApp оставляем с кодом страны
-  const waNumber = data.phone;
-
-  const card = document.createElement("article");
-  card.classList.add("card");
-  card.dataset.images = JSON.stringify(data.images);
-  card.dataset.favoriteId = data.id;
+    const card = document.createElement("article");
+    card.classList.add("card");
+    card.dataset.images = JSON.stringify(data.images);
+    card.dataset.favoriteId = data.id;
 
   card.innerHTML = `
     <div class="img">
