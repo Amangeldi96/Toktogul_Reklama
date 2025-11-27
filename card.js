@@ -13,16 +13,16 @@ document.addEventListener("DOMContentLoaded", () => {
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
 
-  // ===== Переменные =====
-  const modal = document.getElementById("modal");
-  const categorySelect = document.getElementById("category");
+  // ===== Элементы =====
   const cardsContainer = document.getElementById("cards");
   const createAdBtn = document.getElementById("createAd");
+  const categorySelect = document.getElementById("category");
   const desc = document.getElementById("desc");
   const counter = document.getElementById("counter");
   const favoriteMenu = document.querySelector('[data-type="favorite"]');
   const homeMenu = document.querySelector('[data-type="home"]');
   const searchInput = document.getElementById("searchInput");
+  const chatMenu = document.querySelector('[data-type="chat"]');
 
   const categoryLabels = {
     electronics: "Электроника",
@@ -38,9 +38,13 @@ document.addEventListener("DOMContentLoaded", () => {
     other: "Другое"
   };
 
-  let allAds = [];
-  let favorites = [];
-  let uniqueViews = {};
+  let allAds = JSON.parse(localStorage.getItem("allAds") || "[]");
+  let favorites = JSON.parse(localStorage.getItem("favorites") || "[]");
+  let uniqueViews = JSON.parse(localStorage.getItem("uniqueViews") || "{}");
+
+  function saveAllAds() { localStorage.setItem("allAds", JSON.stringify(allAds)); }
+  function saveFavorites() { localStorage.setItem("favorites", JSON.stringify(favorites)); }
+  function saveUniqueViews() { localStorage.setItem("uniqueViews", JSON.stringify(uniqueViews)); }
 
   // ===== Счётчик описания =====
   if (desc && counter) {
@@ -49,89 +53,79 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // ===== Загрузка объявлений из Firebase =====
+  // ===== Показ объявлений из localStorage сразу =====
+  if (allAds.length) renderMasonry(allAds, 2);
+
+  // ===== Загрузка свежих объявлений из Firebase =====
   async function loadAllAds() {
     try {
       const snapshot = await db.collection("ads").orderBy("timestamp", "desc").get();
       allAds = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      saveAllAds();
       renderMasonry(allAds, 2);
     } catch (error) {
       console.error("Ошибка при загрузке объявлений:", error);
     }
   }
 
+  loadAllAds();
+
   // ===== Добавление объявления =====
-  if (createAdBtn) {
-    createAdBtn.addEventListener("click", async (e) => {
-      e.preventDefault();
+  createAdBtn.addEventListener("click", async (e) => {
+    e.preventDefault();
 
-      const phoneInput = document.getElementById("phone").value.trim();
-      const phone = phoneInput.startsWith("0") ? "996" + phoneInput.slice(1) : phoneInput;
-      const category = categorySelect.value;
-      const descText = desc.value.trim();
-      const price = document.getElementById("price").value.trim();
-      const allImgs = Array.from(document.querySelectorAll("#selectedGrid .slot img.gal"))
-        .map(img => img.src)
-        .filter(src => src && !src.includes("Canvas.svg"));
+    const phoneInput = document.getElementById("phone").value.trim();
+    const phone = phoneInput.startsWith("0") ? "996" + phoneInput.slice(1) : phoneInput;
+    const category = categorySelect.value;
+    const descText = desc.value.trim();
+    const price = document.getElementById("price").value.trim();
+    const allImgs = Array.from(document.querySelectorAll("#selectedGrid .slot img.gal"))
+      .map(img => img.src)
+      .filter(src => src && !src.includes("Canvas.svg"));
 
-      if (!phone || !category || !descText || allImgs.length === 0) {
-        alert("Заполните все поля и добавьте хотя бы одно фото.");
-        return;
-      }
+    if (!phone || !category || !descText || allImgs.length === 0) {
+      alert("Заполните все поля и добавьте хотя бы одно фото.");
+      return;
+    }
 
-      const newAdData = {
-        images: allImgs,
-        firstImg: allImgs[0],
-        categoryName: categoryLabels[category] || "Категория",
-        descText,
-        price,
-        phone,
-        views: 0,
-        likes: 0,
-        timestamp: Date.now()
-      };
+    const newAdData = {
+      images: allImgs,
+      firstImg: allImgs[0],
+      categoryName: categoryLabels[category] || "Категория",
+      descText,
+      price,
+      phone,
+      views: 0,
+      likes: 0,
+      timestamp: Date.now()
+    };
 
-      try {
-        await db.collection("ads").add(newAdData);
+    try {
+      const docRef = await db.collection("ads").add(newAdData);
+      allAds.unshift({ id: docRef.id, ...newAdData });
+      saveAllAds();
+      renderMasonry(allAds, 2);
 
-        // Очистка формы
-        document.getElementById("phone").value = "";
-        categorySelect.value = "";
-        document.getElementById("price").value = "";
-        desc.value = "";
-        counter.textContent = "0/6000";
-        document.querySelectorAll("#selectedGrid img.gal").forEach(img => img.src = "./img/Canvas.svg");
+      // Очистка формы
+      document.getElementById("phone").value = "";
+      categorySelect.value = "";
+      document.getElementById("price").value = "";
+      desc.value = "";
+      counter.textContent = "0/6000";
+      document.querySelectorAll("#selectedGrid img.gal").forEach(img => img.src = "./img/Canvas.svg");
 
-        modal.classList.remove("open");
-        document.body.style.overflow = "";
-
-        await loadAllAds(); // Перезагрузка объявлений после добавления
-      } catch (error) {
-        console.error("Ошибка при добавлении объявления:", error);
-        alert("Ошибка при сохранении объявления. Попробуйте снова.");
-      }
-    });
-  }
-
-  // ===== WhatsApp =====
-  const chatMenu = document.querySelector('[data-type="chat"]');
-  if (chatMenu) {
-    chatMenu.addEventListener("click", () => {
-      const whatsappNumber = "996220604604"; 
-      window.open(`https://wa.me/${whatsappNumber}`, "_blank");
-    });
-  }
+    } catch (error) {
+      console.error("Ошибка при добавлении объявления:", error);
+      alert("Ошибка при сохранении объявления. Попробуйте снова.");
+    }
+  });
 
   // ===== Masonry layout =====
   function renderMasonry(cardsData, columnsCount = 2) {
-    const container = cardsContainer;
-    if (!container) return;
-
-    let columns = Array.from(container.querySelectorAll(".column"));
-    if (columns.length === columnsCount) {
-      columns.forEach(col => col.innerHTML = "");
-    } else {
-      container.innerHTML = "";
+    if (!cardsContainer) return;
+    let columns = Array.from(cardsContainer.querySelectorAll(".column"));
+    if (columns.length !== columnsCount) {
+      cardsContainer.innerHTML = "";
       columns = [];
       for (let i = 0; i < columnsCount; i++) {
         const col = document.createElement("div");
@@ -141,14 +135,15 @@ document.addEventListener("DOMContentLoaded", () => {
         col.style.flexDirection = "column";
         col.style.gap = "10px";
         columns.push(col);
-        container.appendChild(col);
+        cardsContainer.appendChild(col);
       }
+    } else {
+      columns.forEach(col => col.innerHTML = "");
     }
 
     cardsData.forEach((data, index) => {
       const card = createCard(data);
-      const colIndex = index % columnsCount;
-      columns[colIndex].appendChild(card);
+      columns[index % columnsCount].appendChild(card);
     });
   }
 
@@ -160,6 +155,8 @@ document.addEventListener("DOMContentLoaded", () => {
         allAds[adIndex].views++;
         viewCountElement.textContent = allAds[adIndex].views;
         uniqueViews[cardId] = true;
+        saveUniqueViews();
+        saveAllAds();
       }
     }
   }
@@ -175,23 +172,6 @@ document.addEventListener("DOMContentLoaded", () => {
     galleryTrack.innerHTML = images.map(src => `<div class="gallery-slide"><img src="${src}" /></div>`).join("");
     galleryModal.classList.add("open");
     document.body.style.overflow = "hidden";
-
-    galleryTrack.style.display = "flex";
-    galleryTrack.style.overflowX = "auto";
-    galleryTrack.style.scrollSnapType = "x mandatory";
-    galleryTrack.querySelectorAll(".gallery-slide").forEach(slide => {
-      slide.style.flex = "0 0 100%";
-      slide.style.scrollSnapAlign = "center";
-    });
-
-    const galleryOrder = document.getElementById("galleryOrder");
-    if (galleryOrder) {
-      galleryOrder.onclick = () => {
-        galleryModal.classList.remove("open");
-        document.body.style.overflow = "";
-        card.scrollIntoView({ behavior: "smooth", block: "center" });
-      };
-    }
   }
 
   document.getElementById("closeGallery").addEventListener("click", () => {
@@ -204,10 +184,8 @@ document.addEventListener("DOMContentLoaded", () => {
     data.views = data.views || 0;
     data.likes = data.likes || 0;
 
-    let displayPhone = data.phone || "";
-    displayPhone = displayPhone.replace(/\D/g, "");
-    if (displayPhone.startsWith("996")) displayPhone = "0" + displayPhone.slice(3);
-    const waNumber = displayPhone.startsWith("0") ? "996" + displayPhone.slice(1) : displayPhone;
+    const displayPhone = data.phone.startsWith("996") ? "0" + data.phone.slice(3) : data.phone;
+    const waNumber = data.phone.startsWith("0") ? "996" + data.phone.slice(1) : data.phone;
 
     const card = document.createElement("article");
     card.classList.add("card");
@@ -217,10 +195,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const isFavoriteNow = favorites.some(item => item.id === data.id);
     data.isFavorite = isFavoriteNow;
 
-
-
     card.innerHTML = `
-          <div class="img">
+   <div class="img">
       <img src="${data.firstImg}" class="card-img"/>
     </div>
     <div class="body">
@@ -257,10 +233,10 @@ document.addEventListener("DOMContentLoaded", () => {
     </div>
     `;
 
-   // галерея
+    // Галерея
     card.querySelector(".card-img").addEventListener("click", () => openGallery(data.images, card, data.id));
 
-    // лайки
+    // Лайки
     card.querySelector(".heart").addEventListener("click", () => {
       const btn = card.querySelector(".heart");
       const likeCountElement = card.querySelector(".like-count");
@@ -277,6 +253,8 @@ document.addEventListener("DOMContentLoaded", () => {
           if (!favorites.find(item => item.id === data.id)) favorites.push({ ...currentAd, isFavorite: true });
         }
         likeCountElement.textContent = currentAd.likes;
+        saveFavorites();
+        saveAllAds();
       }
     });
 
@@ -306,11 +284,17 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // ===== Стартовый рендер =====
-  loadAllAds().then(() => {
-    window.renderAds = renderMasonry;
-    window.allAds = allAds;
-    window.favorites = favorites;
-  });
+  // ===== WhatsApp =====
+  if (chatMenu) {
+    chatMenu.addEventListener("click", () => {
+      const whatsappNumber = "996220604604"; 
+      window.open(`https://wa.me/${whatsappNumber}`, "_blank");
+    });
+  }
+
+  // ===== Экспорт для других скриптов =====
+  window.renderAds = renderMasonry;
+  window.allAds = allAds;
+  window.favorites = favorites;
 
 });
