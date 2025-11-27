@@ -74,19 +74,11 @@ listenAds();
 createAdBtn.addEventListener("click", async (e) => {
   e.preventDefault();
 
-  // Блокируем кнопку
+  // Блокируем кнопку, чтобы не было многократных нажатий
   createAdBtn.disabled = true;
 
   const phoneInput = document.getElementById("phone").value.trim();
-  let displayPhone = phoneInput.replace(/\D/g, "");
-
-  if (!displayPhone) {
-    alert("Введите номер телефона");
-    createAdBtn.disabled = false;
-    return;
-  }
-
-  const phoneForFirebase = displayPhone.startsWith("0") ? "996" + displayPhone.slice(1) : displayPhone;
+  const phone = phoneInput.startsWith("0") ? "996" + phoneInput.slice(1) : phoneInput;
   const category = categorySelect.value;
   const descText = desc.value.trim();
   const price = document.getElementById("price").value.trim();
@@ -94,7 +86,7 @@ createAdBtn.addEventListener("click", async (e) => {
     .map(img => img.src)
     .filter(src => src && !src.includes("Canvas.svg"));
 
-  if (!category || !descText || allImgs.length === 0) {
+  if (!phone || !category || !descText || allImgs.length === 0) {
     alert("Заполните все поля и добавьте хотя бы одно фото.");
     createAdBtn.disabled = false;
     return;
@@ -106,14 +98,18 @@ createAdBtn.addEventListener("click", async (e) => {
     categoryName: categoryLabels[category] || "Категория",
     descText,
     price,
-    phone: phoneForFirebase,
+    phone,
     views: 0,
     likes: 0,
     timestamp: Date.now()
   };
 
   try {
-    await db.collection("ads").add(newAdData);
+    const docRef = await db.collection("ads").add(newAdData);
+
+    // Показ локально
+    allAds.unshift({ id: docRef.id, ...newAdData });
+    renderMasonry(allAds, 2);
 
     // Очистка формы
     document.getElementById("phone").value = "";
@@ -123,20 +119,23 @@ createAdBtn.addEventListener("click", async (e) => {
     counter.textContent = "0/6000";
     document.querySelectorAll("#selectedGrid img.gal").forEach(img => img.src = "./img/Canvas.svg");
 
-    // Закрываем popup
+    // **Закрываем popup после успешного добавления**
     const popup = document.getElementById("addPopup");
     if (popup) {
-      popup.classList.remove("open");
-      document.body.style.overflow = "";
+      popup.classList.remove("open"); // закрываем popup
+      document.body.style.overflow = ""; // восстанавливаем прокрутку
     }
 
   } catch (error) {
     console.error("Ошибка при добавлении объявления:", error);
     alert("Ошибка при сохранении объявления. Попробуйте снова.");
   } finally {
-    createAdBtn.disabled = false;
+    createAdBtn.disabled = false; // разблокируем кнопку
   }
 });
+
+
+
 
   // ===== Masonry layout =====
   function renderMasonry(cardsData, columnsCount = 2) {
