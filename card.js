@@ -199,29 +199,29 @@ createAdBtn.addEventListener("click", async (e) => {
 
   // ===== Создание карточки =====
   function createCard(data) {
-    data.views = data.views || 0;
-    data.likes = data.likes || 0;
+  data.views = data.views || 0;
+  data.likes = data.likes || 0;
 
-    const displayPhone = data.phone.startsWith("996") ? "0" + data.phone.slice(3) : data.phone;
-    const waNumber = data.phone.startsWith("0") ? "996" + data.phone.slice(1) : data.phone;
+  // Номер для отображения и звонка
+  const displayPhone = data.phone.startsWith("996") ? "0" + data.phone.slice(3) : data.phone;
 
-    const card = document.createElement("article");
-    card.classList.add("card");
-    card.dataset.images = JSON.stringify(data.images);
-    card.dataset.favoriteId = data.id;
+  // Номер для WhatsApp остаётся с кодом страны
+  const waNumber = data.phone.startsWith("0") ? "996" + data.phone.slice(1) : data.phone;
 
-    const isFavoriteNow = favorites.some(item => item.id === data.id);
-    data.isFavorite = isFavoriteNow;
+  const card = document.createElement("article");
+  card.classList.add("card");
+  card.dataset.images = JSON.stringify(data.images);
+  card.dataset.favoriteId = data.id;
 
-    card.innerHTML = `
-   <div class="img">
+  card.innerHTML = `
+    <div class="img">
       <img src="${data.firstImg}" class="card-img"/>
     </div>
     <div class="body">
       <div class="price">${data.price ? data.price + " сом" : "Договорная"}</div>
       <div class="sub">${data.categoryName}</div>
       <div class="title">${data.descText || "Без описания"}</div>
- <div class="phone">
+      <div class="phone">
         ${displayPhone ? `
           <a href="tel:${displayPhone}" class="phone-link">${displayPhone}</a>
           <a href="https://wa.me/${waNumber}" target="_blank" class="icon-btn whatsapp">
