@@ -55,16 +55,33 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // ===== Открытие / закрытие модалки =====
-  if (openModalBtn) {
+  if (openModalBtn && closeModalBtn && modal) {
+    // Открыть модалку
     openModalBtn.addEventListener("click", () => {
       modal.classList.add("open");
-      document.body.style.overflow = "hidden";
+      document.body.style.overflow = "hidden"; // блокируем прокрутку фона
     });
-  }
-  if (closeModalBtn) {
+
+    // Закрыть модалку кнопкой
     closeModalBtn.addEventListener("click", () => {
       modal.classList.remove("open");
-      document.body.style.overflow = "";
+      document.body.style.overflow = ""; // возвращаем прокрутку
+    });
+
+    // Закрытие при клике вне контента
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) {
+        modal.classList.remove("open");
+        document.body.style.overflow = "";
+      }
+    });
+
+    // ESC для закрытия
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && modal.classList.contains("open")) {
+        modal.classList.remove("open");
+        document.body.style.overflow = "";
+      }
     });
   }
 
