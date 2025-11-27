@@ -83,6 +83,15 @@ document.addEventListener("DOMContentLoaded", () => {
     alert("Заполните все поля и добавьте хотя бы одно фото.");
     return;
   }
+	   let phone = document.getElementById("phone").value.trim();
+      const category = categorySelect.value;
+      const descText = desc.value.trim();
+      const price = document.getElementById("price").value.trim();
+
+      phone = phone.replace(/\D/g, "");
+      if (phone.startsWith("996")) {
+        phone = "0" + phone.slice(3);
+      }
 
   const newAdData = {
     images: allImgs,
