@@ -1,17 +1,23 @@
 document.addEventListener("DOMContentLoaded", () => {
 
-  // ===== Firebase =====
-  const firebaseConfig = {
-    apiKey: "AIzaSyD4G8qEj4o6ZGGdZMkmqrcFjsKeexAPPlE",
-    authDomain: "toktogul-b4bc8.firebaseapp.com",
-    projectId: "toktogul-b4bc8",
-    storageBucket: "toktogul-b4bc8.firebasestorage.app",
-    messagingSenderId: "994223338100",
-    appId: "1:994223338100:web:41f38224398bd4d21e5721",
-    measurementId: "G-EGSEE12JPM"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
+// ===== Firebase =====
+const firebaseConfig = {
+  apiKey: "AIzaSyD4G8qEj4o6ZGGdZMkmqrcFjsKeexAPPlE",
+  authDomain: "toktogul-b4bc8.firebaseapp.com",
+  projectId: "toktogul-b4bc8",
+  storageBucket: "toktogul-b4bc8.firebasestorage.app",
+  messagingSenderId: "994223338100",
+  appId: "1:994223338100:web:41f38224398bd4d21e5721",
+  measurementId: "G-EGSEE12JPM"
+};
+firebase.initializeApp(firebaseConfig);
+
+// Включаем offline persistence
+firebase.firestore().enablePersistence()
+  .catch(err => console.log("Ошибка offline persistence:", err));
+
+const db = firebase.firestore();
+
 
   // ===== Элементы =====
   const cardsContainer = document.getElementById("cards");
@@ -55,22 +61,19 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // ===== Показ объявлений из localStorage сразу =====
-  if (allAds.length) renderMasonry(allAds, 2);
-
-  // ===== Загрузка свежих объявлений из Firebase =====
-  async function loadAllAds() {
-    try {
-      if (loadingEl) loadingEl.style.display = "block";
-      const snapshot = await db.collection("ads").orderBy("timestamp", "desc").get();
-      allAds = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      saveAllAds();
-      renderMasonry(allAds, 2);
-    } catch (error) {
-      console.error("Ошибка при загрузке объявлений:", error);
-    } finally {
-      if (loadingEl) loadingEl.style.display = "none";
-    }
+async function loadAllAds() {
+  try {
+    if (loadingEl) loadingEl.style.display = "block";
+    const snapshot = await db.collection("ads").orderBy("timestamp", "desc").get();
+    allAds = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    saveAllAds();
+    renderMasonry(allAds, 2);
+  } catch (error) {
+    console.error("Ошибка при загрузке объявлений:", error);
+  } finally {
+    if (loadingEl) loadingEl.style.display = "none";
   }
+}
 
   loadAllAds();
 
