@@ -23,41 +23,88 @@
 	}
 
 
-  .modal {
-    position:fixed;
-    inset:0;
-    display:none;
-    align-items:flex-start;
-    justify-content:center;
-    z-index:50;
-    overflow:auto;
-  }
-  .modal.open{display:flex;}
-  .modal__sheet{
-    width:100%;
-    max-width:540px;
-    background:#fff;
-    border-radius:20px 20px 0 0;
-    padding:18px 18px 34px;
-    box-sizing:border-box;
-    min-height:100vh;
-    box-shadow:var(--shadow);
-  }
+ /* Базовая модалка */
+.modal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: flex-start; /* сверху с отступом */
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.5); /* затемнение фона */
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  z-index: 50;
+  overflow-y: auto;
+}
 
-  .modal__header{
-    display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;
-  }
-  .modal__title{
-    text-align:center;
-    flex:1;
-    font-size:20px;
-    font-weight:700;
-    color:#0f2140;
-  }
-  .close-btn{
-    width:36px;height:36px;border:none;background:transparent;cursor:pointer;
-    display:flex;align-items:center;justify-content:center;color:#77808d;
-  }
+/* Открытая модалка */
+.modal.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Контейнер модалки */
+.modal__sheet {
+  width: 100%;
+  max-width: 540px;
+  background: #fff;
+  border-radius: 20px 20px 0 0;
+  padding: 20px 18px 34px;
+  box-sizing: border-box;
+  min-height: 100vh;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
+  transform: translateY(50px);
+  transition: transform 0.3s ease;
+}
+
+/* Анимация появления контента */
+.modal.open .modal__sheet {
+  transform: translateY(0);
+}
+
+/* Хедер модалки */
+.modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  position: sticky;
+  top: 0;
+  background: #fff;
+  z-index: 10;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+/* Заголовок */
+.modal__title {
+  text-align: center;
+  flex: 1;
+  font-size: 20px;
+  font-weight: 700;
+  color: #0f2140;
+}
+
+/* Кнопка закрытия */
+.close-btn {
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #77808d;
+  font-size: 24px;
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.close-btn:hover {
+  transform: scale(1.1);
+  color: #0f2140;
+}
 
   .tabs{
     display:flex;
