@@ -14,7 +14,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const db = firebase.firestore();
 
-
+  // ===== Включаем offline persistence =====
+  firebase.firestore().enablePersistence()
+    .catch(err => console.log("Ошибка offline persistence:", err));
 
   // ===== Элементы =====
   const cardsContainer = document.getElementById("cards");
@@ -57,25 +59,20 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-async function loadAllAds() {
-  if (loadingEl) loadingEl.style.display = "block"; // показываем индикатор загрузки
-  try {
-    const snapshot = await db.collection("ads").orderBy("timestamp", "desc").get();
-    allAds = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    saveAllAds(); // сохраняем в localStorage
+// Функция загрузки объявлений
+function loadAllAds() {
+  if (loadingEl) loadingEl.style.display = "block";
 
-    if (allAds.length) {
-      renderMasonry(allAds, 2); // рендерим карточки
-    } else {
-      cardsContainer.innerHTML = "<p style='text-align:center;'>Нет объявлений</p>";
-    }
-  } catch (error) {
-    console.error("Ошибка при загрузке объявлений:", error);
-		alert("Ошибка при загрузке объявлений. Попробуйте обновить страницу." + error.message);
-    cardsContainer.innerHTML = "<p style='text-align:center; color:red;'>Ошибка загрузки объявлений</p>";
-  } finally {
-    if (loadingEl) loadingEl.style.display = "none"; // скрываем индикатор
-  }
+  db.collection("ads").orderBy("timestamp", "desc")
+    .onSnapshot(snapshot => {
+      allAds = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      renderMasonry(allAds, 2);  // рендерим сразу
+      if (loadingEl) loadingEl.style.display = "none";
+    }, error => {
+      console.error("Ошибка при загрузке объявлений:", error);
+      if (loadingEl) loadingEl.style.display = "none";
+      cardsContainer.innerHTML = "<p style='text-align:center; color:red;'>Ошибка загрузки объявлений</p>";
+    });
 }
 
 // стартовая загрузка
